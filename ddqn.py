@@ -13,12 +13,12 @@ STEPS = 200
 EPSILON = 1
 EPSILON_MIN = 0.01
 EPSILON_DISCOUNT = 0.99
-TRAIN_START = 1
+TRAIN_START = 10
 LEARNING_RATE = 0.01
 NUM_STATES = 2
 NUM_ACTIONS = 3
 NODES = 32
-BATCH_SIZE = 1
+BATCH_SIZE = 10
 CAPACITY = 10000
 PATH = '.\ddqn_saved.pth'
 DATA = namedtuple('DATA', ('state', 'action', 'reward', 'next_state', 'done'))
@@ -88,7 +88,21 @@ class Brain:
         next_serial = batch.next_state
         done_serial = batch.done
 
-        print(state_serial,action_serial)
+        state_serial = torch.stack(state_serial).float()
+        action_serial = torch.stack(action_serial)
+        reward_serial = torch.stack(reward_serial)
+        next_serial = torch.stack(next_serial).float()
+        done_serial = torch.stack(done_serial)
+
+        Q_val = agent.Q(state_serial)
+        action_serial = action_serial.reshape(-1, 1)
+        Q_val = Q_val.gather(1, action_serial)
+
+        #DDQN
+        #최대행동 Main-Q에서 추출
+        Q_val_max = agent.Q(next_serial).max(1)[0]
+        #업데이트 식
+
 
         exit()
 
@@ -133,7 +147,8 @@ if __name__ == '__main__':
             env.render()
             action = agent.action_request(state)
             next_state, reward, done, info = env.step(action)
-            agent.save_to_DB(state, action, reward, next_state, done)
+            agent.save_to_DB(torch.tensor(state), torch.tensor(action), torch.tensor(reward),
+                             torch.tensor(next_state), torch.tensor(done))
             if agent.DB.__len__() > TRAIN_START:
                 agent.train()
             if done:
