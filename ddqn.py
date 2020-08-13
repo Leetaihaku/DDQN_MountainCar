@@ -13,6 +13,7 @@ STEPS = 200
 EPSILON = 1
 EPSILON_MIN = 0.01
 EPSILON_DISCOUNT = 0.99
+DISCOUNT_FACTOR = 0.9
 TRAIN_START = 10
 LEARNING_RATE = 0.01
 NUM_STATES = 2
@@ -95,9 +96,14 @@ class Brain:
         done_serial = torch.stack(done_serial)
 
         Q_val = agent.Q(state_serial)
-        action_serial = action_serial.reshape(-1, 1)
-        Q_val = Q_val.gather(1, action_serial)
-
+        Q_val = torch.argmax(Q_val, 1)
+        print(type(Q_val))
+        Target_val = agent.TQ(next_serial).max(1),[0]
+        print(Target_val)
+        Target_val = reward + DISCOUNT_FACTOR * (~done) * Target_val
+        #action_serial = action_serial.reshape(-1, 1)
+        print(Target_val)
+        exit()
         #DDQN
         #최대행동 Main-Q에서 추출
         Q_val_max = agent.Q(next_serial).max(1)[0]
